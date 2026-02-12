@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+/* Optional: Add a smooth default background */
+body {
+  background-color: #f9fafb; 
+}

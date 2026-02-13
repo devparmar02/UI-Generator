@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 
-export function useTypewriter(code: string, speed = 5) {
+export function useTypewriter(code: string, speed = 15) {
   const [displayCode, setDisplayCode] = useState(code);
 
   useEffect(() => {
-    // 1. If code is empty or null, reset immediate
+    // 1. If code is empty, reset immediately
     if (!code) {
       setDisplayCode('');
       return;
@@ -18,9 +18,9 @@ export function useTypewriter(code: string, speed = 5) {
       let i = 0;
       const timer = setInterval(() => {
         if (i < code.length) {
-          // Add 5 chars at a time for snappy typing
-          setDisplayCode(prev => prev + code.slice(i, i + 5)); 
-          i += 5;
+          // EDIT: Changed from 5 to 2 characters at a time for smoother, slower typing
+          setDisplayCode(prev => prev + code.slice(i, i + 2)); 
+          i += 2;
         } else {
           setDisplayCode(code); // Ensure it finishes cleanly
           clearInterval(timer);
@@ -34,7 +34,5 @@ export function useTypewriter(code: string, speed = 5) {
     }
   }, [code, speed]);
 
-  // FIX: We return the string directly. 
-  // The previous version returned { displayedText, isTyping } which caused your error.
   return displayCode;
 }

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { LiveEditor } from 'react-live';
+import { useTypewriter } from '@/hooks/useTypewriter'; // Import the new hook
 
 interface CodeViewerProps {
   code: string;
@@ -10,6 +11,10 @@ interface CodeViewerProps {
 
 export function CodeViewer({ code, onChange }: CodeViewerProps) {
   const [copied, setCopied] = useState(false);
+  
+  // 1. USE THE HOOK: Get the animated version of the code
+  const displayCode = useTypewriter(code);
+  const isStreaming = code !== displayCode;
 
   const handleCopy = async () => {
     if (!code) return;
@@ -33,7 +38,10 @@ export function CodeViewer({ code, onChange }: CodeViewerProps) {
       <div className="flex items-center justify-between px-4 py-2 border-b border-gray-800 bg-gray-900/50 flex-shrink-0">
         <div className="flex flex-col">
           <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Manual Editor</span>
-          <span className="text-[10px] text-gray-500 italic">Edits sync to preview</span>
+          {/* 2. VISUAL FEEDBACK: Show "Streaming..." when animating */}
+          <span className={`text-[10px] italic transition-colors ${isStreaming ? 'text-blue-400 animate-pulse' : 'text-gray-500'}`}>
+            {isStreaming ? 'AI Generating...' : 'Edits sync to preview'}
+          </span>
         </div>
         
         <button
@@ -61,11 +69,11 @@ export function CodeViewer({ code, onChange }: CodeViewerProps) {
 
       {/* Editable Code Area */}
       <div className="flex-1 overflow-auto bg-gray-950 custom-scrollbar">
-        {/* Fix: language="jsx" prevents the toLowerCase() crash */}
         <LiveEditor 
-          code={code} 
+          code={displayCode} // 3. Use the animated code here
           onChange={onChange}
           language="jsx"
+          disabled={isStreaming} // 4. Prevent editing while streaming
           className="font-mono text-sm leading-relaxed"
           style={{
             fontFamily: '"Fira Code", monospace',

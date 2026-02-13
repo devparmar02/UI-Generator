@@ -1,29 +1,31 @@
 import { useState, useEffect } from 'react';
 
-export function useTypewriter(text: string, speed = 5) {
-  const [displayedText, setDisplayedText] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
+export function useTypewriter(code: string, speed = 10) {
+  const [displayCode, setDisplayCode] = useState(code);
 
   useEffect(() => {
-    // If text is empty or significantly different (new generation), start typing
-    setDisplayedText('');
-    setIsTyping(true);
+    // Only animate if the code changed significantly (new AI generation)
+    if (Math.abs(code.length - displayCode.length) > 10) {
+      let i = 0;
+      setDisplayCode(''); 
+      
+      const timer = setInterval(() => {
+        if (i < code.length) {
+          setDisplayCode(prev => prev + code.slice(i, i + 3)); 
+          i += 3;
+        } else {
+          setDisplayCode(code);
+          clearInterval(timer);
+        }
+      }, speed);
 
-    let i = 0;
-    const timer = setInterval(() => {
-      if (i < text.length) {
-        setDisplayedText((prev) => prev + text.charAt(i));
-        i++;
-      } else {
-        clearInterval(timer);
-        setIsTyping(false);
-      }
-    }, speed);
+      return () => clearInterval(timer);
+    } else {
+      // Immediate update for manual edits
+      setDisplayCode(code);
+    }
+  }, [code, speed]);
 
-    return () => clearInterval(timer);
-  }, [text, speed]);
-
-  // If we are editing manually (small changes), strictly return the full text 
-  // to prevent typing effect on every keystroke
-  return { displayedText, isTyping };
+  // FIX: Return the string directly, not an object
+  return displayCode;
 }

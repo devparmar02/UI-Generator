@@ -1,38 +1,50 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
-export function useTypewriter(code: string, speed = 15) {
-  const [displayCode, setDisplayCode] = useState(code);
+export function useTypewriter(code: string, speed = 10) {
+  const [displayedCode, setDisplayedCode] = useState(code);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const previousCode = useRef(code);
 
   useEffect(() => {
+    // Calculate the difference between the new code and the previous code
+    const diff = Math.abs(code.length - previousCode.current.length);
+    previousCode.current = code;
+
     // 1. If code is empty, reset immediately
     if (!code) {
-      setDisplayCode('');
+      setDisplayedCode('');
+      setIsAnimating(false);
       return;
     }
 
-    // 2. Only animate if the code changed significantly (likely AI generation)
-    // If the difference is small (< 10 chars), it's a manual edit -> show instantly.
-    if (Math.abs(code.length - displayCode.length) > 10) {
-      setDisplayCode(''); // Clear current text to start typing effect
+    // 2. Only trigger animation if the change is LARGE (> 10 chars)
+    // This detects "AI Generation" vs "Manual Typing"
+    if (diff > 10) {
+      setIsAnimating(true);
+      setDisplayedCode('');
       
       let i = 0;
       const timer = setInterval(() => {
         if (i < code.length) {
-          // EDIT: Changed from 5 to 2 characters at a time for smoother, slower typing
-          setDisplayCode(prev => prev + code.slice(i, i + 2)); 
-          i += 2;
+          setDisplayedCode(prev => prev + code.slice(i, i + 3)); 
+          i += 3;
         } else {
-          setDisplayCode(code); // Ensure it finishes cleanly
+          setDisplayedCode(code);
+          setIsAnimating(false);
           clearInterval(timer);
         }
       }, speed);
 
       return () => clearInterval(timer);
     } else {
-      // 3. Immediate update for manual edits (no animation)
-      setDisplayCode(code);
+      // 3. Manual Edit: Sync state immediately and stop animating
+      setDisplayedCode(code);
+      setIsAnimating(false);
     }
   }, [code, speed]);
 
-  return displayCode;
+  // CRITICAL FIX: 
+  // If we are NOT animating (manual edit), return the raw 'code' directly.
+  // This bypasses the React state delay and fixes the cursor jumping issue.
+  return isAnimating ? displayedCode : code;
 }

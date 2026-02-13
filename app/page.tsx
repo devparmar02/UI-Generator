@@ -3,8 +3,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { LivePreview } from '@/components/workspace/LivePreview';
 import { CodeViewer } from '@/components/workspace/CodeViewer';
+import { DiffViewer } from '@/components/workspace/DiffViewer'; // Import the new component
 
-// We define what a single "step" in our history looks like
 type HistoryStep = {
   prompt: string;
   code: string;
@@ -12,22 +12,31 @@ type HistoryStep = {
 };
 
 export default function Home() {
-  // 1. STATE MANAGEMENT
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [history, setHistory] = useState<HistoryStep[]>([]);
-  
-  // RESIZE STATE: Tracks height of the top panel (Live Preview)
-  const [previewHeight, setPreviewHeight] = useState(60); // Start at 60%
+  const [previewHeight, setPreviewHeight] = useState(60);
+  const [viewMode, setViewMode] = useState<'editor' | 'diff'>('editor'); // Track Editor vs Diff
   const isResizing = useRef(false);
 
-  // Get the current code to display
+  // Logic to grab current and previous code for comparison
   const currentCode = history.length > 0 ? history[history.length - 1].code : '';
+  const previousCode = history.length > 1 ? history[history.length - 2].code : '';
 
-  // 2. THE API CALL
+  const handleCodeChange = (newCode: string) => {
+    setHistory(prev => {
+      if (prev.length === 0) return prev;
+      const updatedHistory = [...prev];
+      updatedHistory[updatedHistory.length - 1] = {
+        ...updatedHistory[updatedHistory.length - 1],
+        code: newCode
+      };
+      return updatedHistory;
+    });
+  };
+
   const handleGenerate = async () => {
     if (!userInput.trim()) return;
-    
     setIsLoading(true);
     try {
       const response = await fetch('/api/generate', {
@@ -40,7 +49,6 @@ export default function Home() {
       });
 
       const data = await response.json();
-
       if (data.error) {
         alert("Error generating UI: " + data.error);
         return;
@@ -51,9 +59,8 @@ export default function Home() {
         code: data.code,
         explanation: data.explanation
       }]);
-      
       setUserInput('');
-
+      setViewMode('editor'); // Reset to editor on new generation
     } catch (error) {
       console.error("Fetch error:", error);
       alert("Failed to connect to the AI.");
@@ -65,14 +72,14 @@ export default function Home() {
   const handleRollback = () => {
     if (history.length > 0) {
       setHistory(prev => prev.slice(0, -1));
+      setViewMode('editor');
     }
   };
 
-  // 3. RESIZE HANDLERS
   const startResizing = (e: React.MouseEvent) => {
     isResizing.current = true;
     document.body.style.cursor = 'row-resize';
-    document.body.style.userSelect = 'none'; // Prevent text selection while dragging
+    document.body.style.userSelect = 'none';
   };
 
   const stopResizing = () => {
@@ -83,11 +90,7 @@ export default function Home() {
 
   const resize = (e: MouseEvent) => {
     if (!isResizing.current) return;
-    
-    // Calculate percentage based on mouse Y position relative to window height
     const newHeight = (e.clientY / window.innerHeight) * 100;
-    
-    // Limit range between 20% and 80% to prevent full collapse
     if (newHeight > 20 && newHeight < 80) {
       setPreviewHeight(newHeight);
     }
@@ -108,11 +111,10 @@ export default function Home() {
       {/* LEFT PANEL: Chat / User Intent */}
       <section className="w-1/3 flex flex-col border-r border-gray-200 bg-white h-full relative z-10">
         <header className="p-4 border-b border-gray-100 bg-white">
-          <h1 className="font-bold text-lg text-gray-900 tracking-tight">UI Generator Agent</h1>
-          <p className="text-xs text-gray-500 font-medium">Deterministic System</p>
+          <h1 className="font-bold text-lg text-gray-900 tracking-tight">AI UI Generator</h1>
+          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Deterministic Agent</p>
         </header>
         
-        {/* Chat History Area */}
         <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-4 bg-gray-50/30">
           {history.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-4 opacity-40">
@@ -122,13 +124,11 @@ export default function Home() {
           
           {history.map((step, index) => (
             <div key={index} className="flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              {/* User Bubble */}
               <div className="bg-white p-3 rounded-2xl rounded-tr-none text-sm self-end max-w-[85%] text-gray-700 shadow-sm border border-gray-200">
                 <span className="font-semibold block text-[10px] text-gray-400 mb-1 uppercase tracking-wide">You</span>
                 {step.prompt}
               </div>
               
-              {/* AI Bubble */}
               <div className="bg-blue-50/50 p-3 rounded-2xl rounded-tl-none text-sm self-start max-w-[90%] border border-blue-100/50">
                 <span className="font-semibold block text-[10px] text-blue-400 mb-1 uppercase tracking-wide">AI Architect</span>
                 <span className="text-gray-800 leading-relaxed">{step.explanation}</span>
@@ -138,12 +138,11 @@ export default function Home() {
           
           {isLoading && (
             <div className="self-start bg-gray-100 p-3 rounded-lg text-sm text-gray-500 italic animate-pulse">
-              Thinking, planning, and coding...
+              Generating code...
             </div>
           )}
         </div>
 
-        {/* Input Area */}
         <div className="p-4 border-t border-gray-200 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)]">
           <div className="relative">
             <textarea 
@@ -160,16 +159,12 @@ export default function Home() {
                 }
               }}
             />
-            {/* Action Buttons */}
             <div className="absolute bottom-3 right-3 flex gap-2">
-              {/* EDITED: Better Undo Button with Text */}
               <button 
                 onClick={handleRollback}
                 disabled={history.length === 0 || isLoading}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 hover:text-gray-900 rounded-md transition-all disabled:opacity-50"
-                title="Undo last change"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74-2.74L3 12"></path><path d="M3 3v9h9"></path></svg>
                 Undo
               </button>
               
@@ -182,35 +177,56 @@ export default function Home() {
               </button>
             </div>
           </div>
-          <p className="text-[10px] text-gray-400 mt-2 text-center">
-            Press Enter to generate. Shift+Enter for new line.
-          </p>
         </div>
       </section>
 
-      {/* RIGHT PANEL: Workspace (Preview & Code) */}
+      {/* RIGHT PANEL: Workspace (Preview & Editable Code) */}
       <section className="w-2/3 h-full flex flex-col bg-gray-100">
         
-        {/* 1. Live Preview (Dynamic Height) */}
+        {/* Live Preview */}
         <div style={{ height: `${previewHeight}%` }} className="w-full p-4 pb-0 min-h-[20%]">
           <div className="h-full shadow-sm rounded-xl overflow-hidden bg-white border border-gray-200/60 relative">
              <LivePreview code={currentCode} />
           </div>
         </div>
 
-        {/* 2. Resizer Handle */}
+        {/* Resizer */}
         <div 
           className="h-4 w-full cursor-row-resize flex items-center justify-center hover:bg-blue-500/10 group transition-colors"
           onMouseDown={startResizing}
         >
-          {/* Visual Grip Indicator */}
           <div className="w-16 h-1 rounded-full bg-gray-300 group-hover:bg-blue-400 transition-colors"></div>
         </div>
 
-        {/* 3. Code Viewer (Remaining Height) */}
+        {/* Code/Diff Section (Bottom) */}
         <div style={{ height: `${100 - previewHeight}%` }} className="w-full p-4 pt-0 min-h-[20%]">
           <div className="h-full flex flex-col rounded-xl overflow-hidden shadow-sm border border-gray-200/60 bg-gray-900">
-            <CodeViewer code={currentCode} />
+            
+            {/* Tab Switcher */}
+            <div className="flex bg-gray-800 border-b border-gray-700">
+              <button 
+                onClick={() => setViewMode('editor')}
+                className={`px-4 py-2 text-[10px] font-bold tracking-widest transition-colors ${viewMode === 'editor' ? 'bg-gray-900 text-white border-b-2 border-blue-500' : 'text-gray-400 hover:text-gray-200'}`}
+              >
+                EDITOR
+              </button>
+              <button 
+                onClick={() => setViewMode('diff')}
+                disabled={history.length < 2}
+                className={`px-4 py-2 text-[10px] font-bold tracking-widest transition-colors disabled:opacity-30 ${viewMode === 'diff' ? 'bg-gray-900 text-white border-b-2 border-blue-500' : 'text-gray-400 hover:text-gray-200'}`}
+              >
+                DIFF VIEW
+              </button>
+            </div>
+
+            {/* Conditional Rendering: Editor vs Diff */}
+            <div className="flex-1 overflow-hidden">
+              {viewMode === 'editor' ? (
+                <CodeViewer code={currentCode} onChange={handleCodeChange} />
+              ) : (
+                <DiffViewer oldCode={previousCode} newCode={currentCode} />
+              )}
+            </div>
           </div>
         </div>
 

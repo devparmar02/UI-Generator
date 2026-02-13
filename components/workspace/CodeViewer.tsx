@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
+import { LiveEditor } from 'react-live';
 
 interface CodeViewerProps {
   code: string;
+  onChange?: (newCode: string) => void;
 }
 
-export function CodeViewer({ code }: CodeViewerProps) {
+export function CodeViewer({ code, onChange }: CodeViewerProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -26,10 +28,13 @@ export function CodeViewer({ code }: CodeViewerProps) {
   }
 
   return (
-    <div className="w-full rounded-lg border border-gray-800 bg-gray-950 overflow-hidden flex flex-col shadow-lg">
+    <div className="w-full h-full rounded-lg border border-gray-800 bg-gray-950 overflow-hidden flex flex-col shadow-lg">
       {/* Header with Copy Button */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-800 bg-gray-900/50">
-        <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Generated JSX</span>
+      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-800 bg-gray-900/50 flex-shrink-0">
+        <div className="flex flex-col">
+          <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Manual Editor</span>
+          <span className="text-[10px] text-gray-500 italic">Edits sync to preview</span>
+        </div>
         
         <button
           onClick={handleCopy}
@@ -42,13 +47,11 @@ export function CodeViewer({ code }: CodeViewerProps) {
         >
           {copied ? (
             <>
-              {/* Check Icon */}
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
               Copied!
             </>
           ) : (
             <>
-              {/* Copy Icon */}
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
               Copy Code
             </>
@@ -56,11 +59,20 @@ export function CodeViewer({ code }: CodeViewerProps) {
         </button>
       </div>
 
-      {/* Code Area */}
-      <div className="relative overflow-hidden">
-        <pre className="p-4 text-sm font-mono text-gray-300 overflow-auto max-h-[300px] leading-relaxed">
-          <code>{code}</code>
-        </pre>
+      {/* Editable Code Area */}
+      <div className="flex-1 overflow-auto bg-gray-950 custom-scrollbar">
+        {/* Fix: language="jsx" prevents the toLowerCase() crash */}
+        <LiveEditor 
+          code={code} 
+          onChange={onChange}
+          language="jsx"
+          className="font-mono text-sm leading-relaxed"
+          style={{
+            fontFamily: '"Fira Code", monospace',
+            fontSize: 13,
+            minHeight: '100%',
+          }}
+        />
       </div>
     </div>
   );

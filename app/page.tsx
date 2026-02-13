@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { LivePreview } from '@/components/workspace/LivePreview';
 import { CodeViewer } from '@/components/workspace/CodeViewer';
+import { DiffViewer } from '@/components/workspace/DiffViewer'; // Import the new component
 
 type HistoryStep = {
   prompt: string;
@@ -15,16 +16,17 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [history, setHistory] = useState<HistoryStep[]>([]);
   const [previewHeight, setPreviewHeight] = useState(60);
+  const [viewMode, setViewMode] = useState<'editor' | 'diff'>('editor'); // Track Editor vs Diff
   const isResizing = useRef(false);
 
+  // Logic to grab current and previous code for comparison
   const currentCode = history.length > 0 ? history[history.length - 1].code : '';
+  const previousCode = history.length > 1 ? history[history.length - 2].code : '';
 
-  // --- NEW: Handle Manual Code Edits ---
   const handleCodeChange = (newCode: string) => {
     setHistory(prev => {
       if (prev.length === 0) return prev;
       const updatedHistory = [...prev];
-      // Update the code of the most recent step
       updatedHistory[updatedHistory.length - 1] = {
         ...updatedHistory[updatedHistory.length - 1],
         code: newCode
@@ -58,6 +60,7 @@ export default function Home() {
         explanation: data.explanation
       }]);
       setUserInput('');
+      setViewMode('editor'); // Reset to editor on new generation
     } catch (error) {
       console.error("Fetch error:", error);
       alert("Failed to connect to the AI.");
@@ -69,6 +72,7 @@ export default function Home() {
   const handleRollback = () => {
     if (history.length > 0) {
       setHistory(prev => prev.slice(0, -1));
+      setViewMode('editor');
     }
   };
 
@@ -194,10 +198,35 @@ export default function Home() {
           <div className="w-16 h-1 rounded-full bg-gray-300 group-hover:bg-blue-400 transition-colors"></div>
         </div>
 
-        {/* --- EDITED: Code Viewer is now passed handleCodeChange to allow manual edits --- */}
+        {/* Code/Diff Section (Bottom) */}
         <div style={{ height: `${100 - previewHeight}%` }} className="w-full p-4 pt-0 min-h-[20%]">
           <div className="h-full flex flex-col rounded-xl overflow-hidden shadow-sm border border-gray-200/60 bg-gray-900">
-            <CodeViewer code={currentCode} onChange={handleCodeChange} />
+            
+            {/* Tab Switcher */}
+            <div className="flex bg-gray-800 border-b border-gray-700">
+              <button 
+                onClick={() => setViewMode('editor')}
+                className={`px-4 py-2 text-[10px] font-bold tracking-widest transition-colors ${viewMode === 'editor' ? 'bg-gray-900 text-white border-b-2 border-blue-500' : 'text-gray-400 hover:text-gray-200'}`}
+              >
+                EDITOR
+              </button>
+              <button 
+                onClick={() => setViewMode('diff')}
+                disabled={history.length < 2}
+                className={`px-4 py-2 text-[10px] font-bold tracking-widest transition-colors disabled:opacity-30 ${viewMode === 'diff' ? 'bg-gray-900 text-white border-b-2 border-blue-500' : 'text-gray-400 hover:text-gray-200'}`}
+              >
+                DIFF VIEW
+              </button>
+            </div>
+
+            {/* Conditional Rendering: Editor vs Diff */}
+            <div className="flex-1 overflow-hidden">
+              {viewMode === 'editor' ? (
+                <CodeViewer code={currentCode} onChange={handleCodeChange} />
+              ) : (
+                <DiffViewer oldCode={previousCode} newCode={currentCode} />
+              )}
+            </div>
           </div>
         </div>
 

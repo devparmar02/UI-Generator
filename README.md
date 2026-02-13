@@ -6,12 +6,15 @@ This project was built as a full-stack assignment to demonstrate AI agent orches
 
 ## 🚀 Features
 
-* [cite_start]**Multi-Step Agent Architecture:** Uses a Planner -> Generator -> Explainer pipeline to ensure high-quality output [cite: 50-60].
-* **Deterministic Runtime:** Enforces a strict component allowlist. [cite_start]Automatically "heals" hallucinations (e.g., converting `<div>` to `<Container>`) to prevent runtime crashes[cite: 18].
-* [cite_start]**Live Workspace:** Resizable split-pane view with real-time live preview and read-only code display [cite: 66-67].
-* [cite_start]**Context-Aware Iteration:** Supports incremental edits (e.g., "Change the chart to a bar chart") without regenerating the entire UI[cite: 79].
-* [cite_start]**State Management:** Full undo/rollback history stack[cite: 72].
-* [cite_start]**Safety Guardrails:** Custom regex-based AST injection validation middleware [cite: 89-90].
+* **Multi-Step Agent Architecture:** Uses a `Planner -> Generator -> Healer` pipeline to ensure high-quality output.
+* **⚡ Powered by Groq:** Leverages **Llama 3-70B** on Groq's LPU engine for near-instant code generation.
+* **Deterministic Runtime:** Enforces a strict component allowlist (e.g., auto-converting `<div>` to `<Container>`) to prevent runtime crashes.
+* **Live Workspace:** Resizable split-pane view with real-time live preview and editable code.
+* **Context-Aware Iteration:** Supports incremental edits (e.g., *"Change the chart to a bar chart"*) without regenerating the entire UI.
+* **State Management:** Full undo/rollback history stack.
+* **Diff View:** Visual comparison tool (`react-diff-viewer-continued`) to see exactly what code the AI changed between versions.
+* **Buffered Streaming:** A custom "Typewriter" hook that simulates streaming while maintaining backend stability and syntax safety.
+* **Safety Guardrails:** Static analysis and strict component schema validation to prevent hallucinated or unsafe code.
 
 ## 🛠️ Tech Stack
 
@@ -42,19 +45,20 @@ This project was built as a full-stack assignment to demonstrate AI agent orches
 
 1.  **Clone the repository**
     ```bash
-    git clone <your-repo-url>
-    cd ui-generator-agent
+    git clone [https://github.com/devparmar02/UI-Generator.git](https://github.com/devparmar02/UI-Generator.git)
+    cd UI-Generator
     ```
 
 2.  **Install dependencies**
+    *(Note: Use the `--legacy-peer-deps` flag to resolve React 19 compatibility issues with the diff viewer)*
     ```bash
-    npm install
+    npm install --legacy-peer-deps
     ```
 
 3.  **Configure Environment Variables**
     Create a `.env.local` file in the root directory and add your Groq API key:
-    ```env
-    GROQ_API_KEY=gsk_...
+    ```bash
+    GROQ_API_KEY=gsk_your_api_key_here
     ```
 
 4.  **Run the development server**
@@ -62,7 +66,7 @@ This project was built as a full-stack assignment to demonstrate AI agent orches
     npm run dev
     ```
 
-5.  Open [http://localhost:3000](http://localhost:3000) with your browser.
+5.  **Open** `http://localhost:3000` with your browser.
 
 ## ⚠️ Known Limitations
 
